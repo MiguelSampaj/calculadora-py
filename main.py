@@ -54,7 +54,7 @@ class App(CTk):
                                 text_color='#fdfdff',
                                 font=CTkFont(family='Segoe UI',
                                              size=27))
-        lbl_resposta.grid(column=0, row=0, padx=15, pady=84)
+        lbl_resposta.grid(column=0, row=0, padx=15, pady=(84, 0))
 
         # Frame dos botões
         frame_button = FrameButton(self)
@@ -69,10 +69,10 @@ class App(CTk):
             if str(lbl_resposta.cget('text')) == '0' and name not in oprs:
                 lbl_resposta.configure(text=name)
             elif len(str(lbl_resposta.cget('text'))) > 0:
-                if (name != '*' and name!= '.' and texto[-1] not in oprs and name in oprs) or name.isnumeric(): # Testando os números e os operadores exceto o '*' e o '.'
+                if (name != '*' and name!= '.' and texto[-1] not in oprs and texto[-1] != '(' and name in oprs) or name.isnumeric(): # Testando os números e os operadores exceto o '*' e o '.'
                     lbl_resposta.configure(text=str(texto) + name)
 
-            if name == '*': # Testando o '*'
+            if name == '*' and texto[-1] != '(': # Testando o '*'
                 pattern_mult = re.compile(r'\*')
                 match_mult = pattern_mult.finditer(str(texto))
                 matchs_list = []
@@ -90,6 +90,17 @@ class App(CTk):
                 else:
                     if texto[-1] not in oprs or texto[-1] == '*':
                         lbl_resposta.configure(text=texto + name)
+
+            if name == '.' and texto[-1] not in oprs and texto[-1] not in '()': # Testando o '.'
+                pattern_dot = re.compile(r'[+\-*/]')
+                list_doted = pattern_dot.split(texto)
+
+                if list_doted[-1].count('.') == 0:
+                    lbl_resposta.configure(text=texto + name)
+
+            if name in '()': # Testando os parenteses
+                if texto[-1] != '.':
+                    lbl_resposta.configure(text=texto + name)
 
         # Botões
         # Coluna 0
@@ -145,6 +156,7 @@ class App(CTk):
 
         # Coluna 2
         but_par_two = Button(frame_button, ')')
+        but_par_two.configure(command=lambda: but_all_command(but_par_two))
         but_par_two.grid(column=2, row=0, padx=3, pady=3)
 
         but_nove = Button(frame_button, '9')
@@ -180,9 +192,23 @@ class App(CTk):
         but_sub.configure(font=CTkFont(family='Segoe UI', size=40), command=lambda: but_all_command(but_sub))
         but_sub.grid(column=3, row=3, padx=3, pady=3)
 
+        def but_equal_command():
+            try:
+                resultado = eval(str(lbl_resposta.cget('text')))
+                lbl_resposta.configure(text=str(resultado))
+            except (SyntaxError, TypeError):
+                lbl_erro = CTkLabel(frame_resposta,
+                                    text='* Existe algum erro de sintaxe na sua operação',
+                                    text_color=but_red_color,
+                                    font=CTkFont(family='Segoe UI', size=20))
+                lbl_erro.grid(column=0, row=1, padx=15, pady=55)
+                lbl_resposta.configure(text='')
+                lbl_erro.after(2500, lambda x=lbl_erro: x.destroy())
+                lbl_resposta.after(2500, lambda x=lbl_resposta: x.configure(text='0'))
+
         but_equal = Button(frame_button, '=')
-        but_equal.configure(fg_color=but_equal_color, hover_color=but_equal_color_hover, font=CTkFont(family='Segoe UI', size=30))
-        but_equal.grid(column=3, row=4, padx=3, pady=3)
+        but_equal.configure(fg_color=but_equal_color, hover_color=but_equal_color_hover, font=CTkFont(family='Segoe UI', size=30), command=but_equal_command)
+        but_equal.grid(column=3, row=4, padx=0, pady=3)
 
 app = App()
 app.mainloop()
